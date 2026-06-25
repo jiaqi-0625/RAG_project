@@ -17,7 +17,6 @@
 
 import logging
 from pathlib import Path
-from typing import Set
 from urllib.parse import urlparse
 
 logging.basicConfig(level=logging.INFO)
@@ -36,9 +35,14 @@ class DocumentLoader:
     """
 
     # 支持的文件扩展名
-    SUPPORTED_SUFFIXES: Set[str] = {
-        ".pdf", ".txt", ".md", ".markdown",
-        ".docx", ".html", ".htm",
+    SUPPORTED_SUFFIXES: set[str] = {
+        ".pdf",
+        ".txt",
+        ".md",
+        ".markdown",
+        ".docx",
+        ".html",
+        ".htm",
     }
 
     def __init__(self):

@@ -17,9 +17,8 @@ Agent 工具模块 — 为 Agent 提供可调用的外部工具（Function Calli
 Agent 可以自主决策何时调用哪个工具来增强回答质量。"
 """
 
-import logging
 from datetime import datetime
-from typing import List, Optional
+import logging
 
 from agno.tools.function import Function
 
@@ -49,11 +48,7 @@ def search_web(query: str, max_results: int = 5) -> str:
         results = []
         with DDGS() as ddgs:
             for r in ddgs.text(query, max_results=max_results):
-                results.append(
-                    f"### {r['title']}\n"
-                    f"{r['body']}\n"
-                    f"🔗 {r['href']}"
-                )
+                results.append(f"### {r['title']}\n" f"{r['body']}\n" f"🔗 {r['href']}")
 
         if not results:
             return (
@@ -61,10 +56,7 @@ def search_web(query: str, max_results: int = 5) -> str:
                 f"Try different keywords or check your network connection."
             )
 
-        header = (
-            f"🌐 Web search results for \"{query}\" "
-            f"({len(results)} results):\n\n"
-        )
+        header = f'🌐 Web search results for "{query}" ' f"({len(results)} results):\n\n"
         return header + "\n\n---\n\n".join(results)
 
     except ImportError:
@@ -130,10 +122,7 @@ def calculate(expression: str) -> str:
         # Format result nicely
         if isinstance(result, float):
             # Avoid floating-point noise for nice numbers
-            if result == int(result):
-                result_repr = f"{int(result)}"
-            else:
-                result_repr = f"{result:.10g}"
+            result_repr = f"{int(result)}" if result == int(result) else f"{result:.10g}"
         else:
             result_repr = str(result)
         return f"📊 {expression} = {result_repr}"
@@ -170,18 +159,16 @@ def get_current_time() -> str:
 # 自动从函数生成 Agno Function 对象（含 JSON Schema）
 _tool_functions = [search_web, calculate, get_current_time]
 
-DEFAULT_TOOLS: List[Function] = [
-    Function.from_callable(fn) for fn in _tool_functions
-]
+DEFAULT_TOOLS: list[Function] = [Function.from_callable(fn) for fn in _tool_functions]
 
 # 按名称索引，方便单独引用
 TOOLS_BY_NAME: dict = {tool.name: tool for tool in DEFAULT_TOOLS}
 
 
 def get_tools(
-    include: Optional[List[str]] = None,
-    exclude: Optional[List[str]] = None,
-) -> List[Function]:
+    include: list[str] | None = None,
+    exclude: list[str] | None = None,
+) -> list[Function]:
     """
     按名称筛选工具列表。
 

@@ -4,13 +4,15 @@
 运行: pytest tests/test_embedder.py -v
 """
 
+from unittest.mock import patch
+
 import pytest
-from unittest.mock import patch, MagicMock
+
 from src.embedder import (
-    OllamaEmbedder,
     BaseEmbedder,
-    OllamaConnectionError,
     EmbeddingModelError,
+    OllamaConnectionError,
+    OllamaEmbedder,
 )
 
 
@@ -60,32 +62,41 @@ class TestOllamaEmbedder:
     def test_embed_connection_error(self):
         """测试 Ollama 连接失败时抛出 OllamaConnectionError"""
         embedder = OllamaEmbedder()
-        with patch.object(
-            embedder._client, "embed",
-            side_effect=ConnectionError("Connection refused"),
+        with (
+            patch.object(
+                embedder._client,
+                "embed",
+                side_effect=ConnectionError("Connection refused"),
+            ),
+            pytest.raises(OllamaConnectionError, match="无法连接到"),
         ):
-            with pytest.raises(OllamaConnectionError, match="无法连接到"):
-                embedder.embed("test")
+            embedder.embed("test")
 
     def test_embed_model_not_found(self):
         """测试模型未找到时抛出 EmbeddingModelError"""
         embedder = OllamaEmbedder()
-        with patch.object(
-            embedder._client, "embed",
-            side_effect=Exception("model 'bad-model' not found"),
+        with (
+            patch.object(
+                embedder._client,
+                "embed",
+                side_effect=Exception("model 'bad-model' not found"),
+            ),
+            pytest.raises(EmbeddingModelError, match="未找到"),
         ):
-            with pytest.raises(EmbeddingModelError, match="未找到"):
-                embedder.embed("test")
+            embedder.embed("test")
 
     def test_embed_empty_response(self):
         """测试空响应时抛出 EmbeddingModelError"""
         embedder = OllamaEmbedder()
-        with patch.object(
-            embedder._client, "embed",
-            return_value={"embeddings": []},
+        with (
+            patch.object(
+                embedder._client,
+                "embed",
+                return_value={"embeddings": []},
+            ),
+            pytest.raises(EmbeddingModelError, match="空结果"),
         ):
-            with pytest.raises(EmbeddingModelError, match="空结果"):
-                embedder.embed("test")
+            embedder.embed("test")
 
     def test_embed_batch_empty_list(self):
         """测试空列表直接返回空列表"""

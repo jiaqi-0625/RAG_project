@@ -8,9 +8,8 @@
 面试时可以说："我设计了一个可替换的嵌入模型抽象层，遵循开闭原则。"
 """
 
-import logging
 from abc import ABC, abstractmethod
-from typing import List
+import logging
 
 import ollama
 
@@ -35,12 +34,12 @@ class BaseEmbedder(ABC):
     """嵌入模型基类"""
 
     @abstractmethod
-    def embed(self, text: str) -> List[float]:
+    def embed(self, text: str) -> list[float]:
         """将单段文本转为向量"""
         ...
 
     @abstractmethod
-    def embed_batch(self, texts: List[str]) -> List[List[float]]:
+    def embed_batch(self, texts: list[str]) -> list[list[float]]:
         """批量将多段文本转为向量"""
         ...
 
@@ -79,7 +78,7 @@ class OllamaEmbedder(BaseEmbedder):
         else:
             self._client = ollama
 
-    def embed(self, text: str) -> List[float]:
+    def embed(self, text: str) -> list[float]:
         """对单段文本做 embedding
 
         Raises:
@@ -93,8 +92,7 @@ class OllamaEmbedder(BaseEmbedder):
             )
         except (ConnectionError, ConnectionRefusedError) as e:
             raise OllamaConnectionError(
-                f"无法连接到 Ollama 服务 ({self._host})。"
-                f"请确认已执行 'ollama serve' 启动服务。"
+                f"无法连接到 Ollama 服务 ({self._host})。" f"请确认已执行 'ollama serve' 启动服务。"
             ) from e
         except Exception as e:
             error_msg = str(e).lower()
@@ -103,17 +101,15 @@ class OllamaEmbedder(BaseEmbedder):
                     f"嵌入模型 '{self._model_name}' 未找到。"
                     f"请执行 'ollama pull {self._model_name}' 下载模型。"
                 ) from e
-            raise EmbeddingModelError(
-                f"嵌入失败: {e}"
-            ) from e
+            raise EmbeddingModelError(f"嵌入失败: {e}") from e
 
         if "embeddings" not in response or not response["embeddings"]:
             raise EmbeddingModelError(
                 f"嵌入模型 '{self._model_name}' 返回了空结果，请检查模型是否正常加载。"
             )
-        return response["embeddings"][0]
+        return response["embeddings"][0]  # type: ignore[no-any-return]
 
-    def embed_batch(self, texts: List[str]) -> List[List[float]]:
+    def embed_batch(self, texts: list[str]) -> list[list[float]]:
         """批量 embedding（一次 HTTP 请求处理多段文本）
 
         Raises:
@@ -130,8 +126,7 @@ class OllamaEmbedder(BaseEmbedder):
             )
         except (ConnectionError, ConnectionRefusedError) as e:
             raise OllamaConnectionError(
-                f"无法连接到 Ollama 服务 ({self._host})。"
-                f"请确认已执行 'ollama serve' 启动服务。"
+                f"无法连接到 Ollama 服务 ({self._host})。" f"请确认已执行 'ollama serve' 启动服务。"
             ) from e
         except Exception as e:
             error_msg = str(e).lower()
@@ -140,9 +135,7 @@ class OllamaEmbedder(BaseEmbedder):
                     f"嵌入模型 '{self._model_name}' 未找到。"
                     f"请执行 'ollama pull {self._model_name}' 下载模型。"
                 ) from e
-            raise EmbeddingModelError(
-                f"批量嵌入失败: {e}"
-            ) from e
+            raise EmbeddingModelError(f"批量嵌入失败: {e}") from e
 
         if "embeddings" not in response or not response["embeddings"]:
             raise EmbeddingModelError(
@@ -155,7 +148,7 @@ class OllamaEmbedder(BaseEmbedder):
                 f"批量嵌入返回数量不匹配: 期望 {len(texts)}, 实际 {len(response['embeddings'])}"
             )
 
-        return response["embeddings"]
+        return response["embeddings"]  # type: ignore[no-any-return]
 
     @property
     def dimensions(self) -> int:

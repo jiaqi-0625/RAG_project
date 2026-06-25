@@ -10,8 +10,6 @@
 """
 
 import logging
-from pathlib import Path
-from typing import List, Optional, Set
 
 from agno.knowledge.knowledge import Knowledge
 from agno.knowledge.reranker.base import Reranker
@@ -43,9 +41,9 @@ class KnowledgeBaseManager:
 
     def __init__(
         self,
-        vector_store: Optional[LanceDBStore] = None,
-        loader: Optional[DocumentLoader] = None,
-        reranker: Optional[Reranker] = None,
+        vector_store: LanceDBStore | None = None,
+        loader: DocumentLoader | None = None,
+        reranker: Reranker | None = None,
     ):
         self._vector_store = vector_store or LanceDBStore(reranker=reranker)
         self._loader = loader or DocumentLoader()
@@ -55,7 +53,7 @@ class KnowledgeBaseManager:
         config.UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
         # 跟踪已加载的来源（避免重复加载）
-        self._loaded_sources: Set[str] = set()
+        self._loaded_sources: set[str] = set()
 
         # 初始化 agno Knowledge 实例
         self._knowledge = Knowledge(
@@ -68,7 +66,7 @@ class KnowledgeBaseManager:
         return self._knowledge
 
     @property
-    def loaded_sources(self) -> Set[str]:
+    def loaded_sources(self) -> set[str]:
         """已加载的来源集合"""
         return self._loaded_sources
 
@@ -109,23 +107,19 @@ class KnowledgeBaseManager:
         except Exception as e:
             error_msg = str(e)
             if "connect" in error_msg.lower() or "timeout" in error_msg.lower():
-                raise RuntimeError(
-                    f"无法下载文档 (网络不可达或超时): {source}"
-                ) from e
+                raise RuntimeError(f"无法下载文档 (网络不可达或超时): {source}") from e
             elif "ollama" in error_msg.lower():
                 raise RuntimeError(
                     f"嵌入失败 (Ollama 服务异常): {source}。"
                     f"请确认 Ollama 正在运行且模型已下载。"
                 ) from e
             else:
-                raise RuntimeError(
-                    f"文档加载失败: {source} — {e}"
-                ) from e
+                raise RuntimeError(f"文档加载失败: {source} — {e}") from e
 
         self._loaded_sources.add(source)
         logger.info(f"成功加载来源: {source}")
 
-    def add_sources(self, sources: List[str]) -> int:
+    def add_sources(self, sources: list[str]) -> int:
         """批量添加文档来源，返回成功添加的数量"""
         count = 0
         for source in sources:

@@ -4,8 +4,6 @@
 运行: pytest tests/test_document_loader.py -v
 """
 
-import pytest
-from pathlib import Path
 from src.document_loader import DocumentLoader
 
 

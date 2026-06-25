@@ -4,29 +4,29 @@ Agentic RAG 核心包 — src 包初始化。
 对外暴露主要类和函数，方便外部 import。
 """
 
-from .config import config, Config
+from .agent import AgentFactory
+from .config import Config, config
+from .document_loader import DocumentLoader
 from .embedder import (
     BaseEmbedder,
-    OllamaEmbedder,
     EmbedderError,
-    OllamaConnectionError,
     EmbeddingModelError,
+    OllamaConnectionError,
+    OllamaEmbedder,
+)
+from .knowledge_base import KnowledgeBaseManager
+from .reranker import (
+    BaseReranker,
+    CrossEncoderReranker,
+    RerankerError,
+    RerankerModelError,
+    create_reranker,
 )
 from .vector_store import (
     BaseVectorStore,
     LanceDBStore,
-    VectorStoreError,
     VectorStoreConnectionError,
-)
-from .document_loader import DocumentLoader
-from .knowledge_base import KnowledgeBaseManager
-from .agent import AgentFactory
-from .reranker import (
-    BaseReranker,
-    CrossEncoderReranker,
-    create_reranker,
-    RerankerError,
-    RerankerModelError,
+    VectorStoreError,
 )
 
 __all__ = [

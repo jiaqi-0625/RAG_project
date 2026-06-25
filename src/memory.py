@@ -10,9 +10,9 @@
 支持多轮对话无缝衔接，并提供历史会话浏览和切换功能。"
 """
 
-import logging
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, TYPE_CHECKING
+import logging
+from typing import TYPE_CHECKING, Any
 from uuid import uuid4
 
 if TYPE_CHECKING:
@@ -29,7 +29,7 @@ class ChatMessage:
     role: str  # "user" | "assistant"
     content: str
 
-    def to_dict(self) -> Dict[str, str]:
+    def to_dict(self) -> dict[str, str]:
         return {"role": self.role, "content": self.content}
 
 
@@ -39,8 +39,8 @@ class SessionInfo:
 
     session_id: str
     session_name: str
-    created_at: Optional[int] = None   # unix timestamp
-    updated_at: Optional[int] = None   # unix timestamp
+    created_at: int | None = None  # unix timestamp
+    updated_at: int | None = None  # unix timestamp
     message_count: int = 0
     is_current: bool = False
 
@@ -62,11 +62,11 @@ class ChatHistory:
     """
 
     def __init__(self, max_messages: int = 100):
-        self._messages: List[ChatMessage] = []
+        self._messages: list[ChatMessage] = []
         self._max_messages = max_messages
 
     @property
-    def messages(self) -> List[ChatMessage]:
+    def messages(self) -> list[ChatMessage]:
         """返回所有消息（只读副本）"""
         return list(self._messages)
 
@@ -89,9 +89,7 @@ class ChatHistory:
         self._trim()
         return msg
 
-    def load_from_agno_messages(
-        self, messages: List[Any], clear_first: bool = True
-    ) -> None:
+    def load_from_agno_messages(self, messages: list[Any], clear_first: bool = True) -> None:
         """
         从 Agno 的 Message 对象列表加载消息到本地 ChatHistory。
 
@@ -115,7 +113,7 @@ class ChatHistory:
     def _trim(self) -> None:
         """保持消息数量在限制内（保留最新的）"""
         if len(self._messages) > self._max_messages:
-            self._messages = self._messages[-self._max_messages:]
+            self._messages = self._messages[-self._max_messages :]
 
     def __len__(self) -> int:
         return len(self._messages)
@@ -144,7 +142,7 @@ class SessionManager:
         sessions = sm.list_sessions(agent)  # 查询历史
     """
 
-    def __init__(self, session_id: Optional[str] = None):
+    def __init__(self, session_id: str | None = None):
         self._session_id = session_id or self._generate_session_id()
 
     # ============================================================
@@ -173,7 +171,7 @@ class SessionManager:
         self,
         agent: "AgnoAgent",
         limit: int = 50,
-    ) -> List[SessionInfo]:
+    ) -> list[SessionInfo]:
         """
         从数据库获取历史会话列表。
 
@@ -190,6 +188,7 @@ class SessionManager:
 
         try:
             from agno.db.base import SessionType
+
             sessions = agent.db.get_sessions(
                 session_type=SessionType.AGENT,
                 component_id=agent.id,
@@ -203,7 +202,7 @@ class SessionManager:
             return []
 
         result = []
-        for s in (sessions or []):
+        for s in sessions or []:
             # 提取会话名称
             session_data = s.session_data or {}
             session_name = session_data.get("session_name", "") or "未命名对话"
@@ -216,26 +215,27 @@ class SessionManager:
                     if messages:
                         # 只统计 user 和 assistant 消息
                         msg_count += sum(
-                            1 for m in messages
-                            if getattr(m, "role", "") in ("user", "assistant")
+                            1 for m in messages if getattr(m, "role", "") in ("user", "assistant")
                         )
 
-            result.append(SessionInfo(
-                session_id=s.session_id,
-                session_name=session_name,
-                created_at=s.created_at,
-                updated_at=s.updated_at,
-                message_count=msg_count,
-                is_current=(s.session_id == self._session_id),
-            ))
+            result.append(
+                SessionInfo(
+                    session_id=s.session_id,
+                    session_name=session_name,
+                    created_at=s.created_at,
+                    updated_at=s.updated_at,
+                    message_count=msg_count,
+                    is_current=(s.session_id == self._session_id),
+                )
+            )
 
         return result
 
     def get_session_messages(
         self,
         agent: "AgnoAgent",
-        session_id: Optional[str] = None,
-    ) -> List[Any]:
+        session_id: str | None = None,
+    ) -> list[Any]:
         """
         从数据库获取指定 session 的消息。
 
@@ -252,7 +252,8 @@ class SessionManager:
 
         try:
             from agno.agent._session import get_chat_history
-            return get_chat_history(agent, session_id=sid)
+
+            return get_chat_history(agent, session_id=sid)  # type: ignore[no-any-return]
         except Exception as e:
             logger.error(f"获取会话消息失败 (session={sid}): {e}")
             return []
@@ -297,6 +298,7 @@ class SessionManager:
             return False
         try:
             from agno.db.base import SessionType
+
             agent.db.rename_session(
                 session_id=session_id,
                 session_type=SessionType.AGENT,

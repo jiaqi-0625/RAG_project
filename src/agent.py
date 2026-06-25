@@ -12,11 +12,11 @@ Agent 工厂 — 创建和配置 RAG Agent。
 - ReAct 推理循环：思考→行动→观察→回答 的可视化
 """
 
-from typing import Callable, Dict, List, Optional, Union
+from collections.abc import Callable
 
 from agno.agent import Agent
-from agno.models.ollama import Ollama
 from agno.db.sqlite.sqlite import SqliteDb
+from agno.models.ollama import Ollama
 from agno.tools.function import Function
 
 from .config import config
@@ -63,13 +63,13 @@ class AgentFactory:
     def create(
         cls,
         kb_manager: KnowledgeBaseManager,
-        model_name: Optional[str] = None,
-        instructions: Optional[List[str]] = None,
-        debug_mode: Optional[bool] = None,
-        tools: Optional[List[Union[Callable, Function, dict]]] = None,
-        enable_tools: Optional[bool] = None,
-        stream_events: Optional[bool] = None,
-        exclude_tools: Optional[List[str]] = None,
+        model_name: str | None = None,
+        instructions: list[str] | None = None,
+        debug_mode: bool | None = None,
+        tools: list[Callable | Function | dict] | None = None,
+        enable_tools: bool | None = None,
+        stream_events: bool | None = None,
+        exclude_tools: list[str] | None = None,
     ) -> Agent:
         """
         创建一个支持工具调用和对话记忆的 Agentic RAG Agent。
@@ -100,7 +100,7 @@ class AgentFactory:
 
         # --- 工具配置 ---
         should_enable_tools = enable_tools if enable_tools is not None else config.ENABLE_TOOLS
-        resolved_tools: Optional[List] = None
+        resolved_tools: list | None = None
 
         if should_enable_tools:
             if tools is not None:
@@ -115,7 +115,9 @@ class AgentFactory:
         # stream_events=True 时 Agno 会在常规内容流之外额外发送工具调用
         # 和推理事件。不覆盖 events_to_skip，使用 Agno 默认值（跳过
         # RunContent 事件，因为内容已通过常规 stream=True 通道输出）。
-        should_stream_events = stream_events if stream_events is not None else config.SHOW_REACT_PROCESS
+        should_stream_events = (
+            stream_events if stream_events is not None else config.SHOW_REACT_PROCESS
+        )
 
         return Agent(
             model=Ollama(
@@ -124,9 +126,7 @@ class AgentFactory:
             knowledge=kb_manager.knowledge,
             instructions=instructions or cls.DEFAULT_INSTRUCTIONS,
             search_knowledge=True,
-            debug_mode=(
-                debug_mode if debug_mode is not None else config.AGENT_DEBUG_MODE
-            ),
+            debug_mode=(debug_mode if debug_mode is not None else config.AGENT_DEBUG_MODE),
             markdown=True,
             # --- 工具调用 ---
             tools=resolved_tools,
@@ -145,7 +145,7 @@ class AgentFactory:
         cls,
         kb_manager: KnowledgeBaseManager,
         model_id: str,
-        instructions: Optional[List[str]] = None,
+        instructions: list[str] | None = None,
         **kwargs,
     ) -> Agent:
         """
@@ -166,7 +166,7 @@ class AgentFactory:
         )
 
 
-def _parse_exclude_list(raw: str) -> List[str]:
+def _parse_exclude_list(raw: str) -> list[str]:
     """解析逗号分隔的排除列表字符串（来自环境变量）"""
     if not raw or not raw.strip():
         return []

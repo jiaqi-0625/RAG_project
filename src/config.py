@@ -7,6 +7,7 @@
 
 import os
 from pathlib import Path
+
 from dotenv import load_dotenv
 
 # 加载项目根目录的 .env 文件
@@ -36,9 +37,7 @@ class Config:
 
     # --- Streamlit ---
     STREAMLIT_PORT: int = int(os.getenv("STREAMLIT_PORT", "8501"))
-    STREAMLIT_TITLE: str = os.getenv(
-        "STREAMLIT_TITLE", "Agentic RAG — 100% 本地知识库问答系统"
-    )
+    STREAMLIT_TITLE: str = os.getenv("STREAMLIT_TITLE", "Agentic RAG — 100% 本地知识库问答系统")
 
     # --- 文档处理 ---
     CHUNK_SIZE: int = int(os.getenv("CHUNK_SIZE", "1000"))
@@ -53,9 +52,7 @@ class Config:
     # --- Reranker ---
     # Cross-Encoder 模型名称，默认使用轻量英文模型 (~87MB)
     # 多语言场景可切换为: BAAI/bge-reranker-v2-m3
-    RERANKER_MODEL: str = os.getenv(
-        "RERANKER_MODEL", "cross-encoder/ms-marco-MiniLM-L-6-v2"
-    )
+    RERANKER_MODEL: str = os.getenv("RERANKER_MODEL", "cross-encoder/ms-marco-MiniLM-L-6-v2")
     # 重排序后保留的文档数
     RERANKER_TOP_N: int = int(os.getenv("RERANKER_TOP_N", "5"))
     # 初始向量检索数量（重排序前的候选集大小）
@@ -64,9 +61,7 @@ class Config:
     RERANKER_ENABLED: bool = os.getenv("RERANKER_ENABLED", "true").lower() == "true"
 
     # --- 文件上传 ---
-    UPLOAD_DIR: Path = Path(
-        os.getenv("UPLOAD_DIR", str(PROJECT_ROOT / "data" / "uploads"))
-    )
+    UPLOAD_DIR: Path = Path(os.getenv("UPLOAD_DIR", str(PROJECT_ROOT / "data" / "uploads")))
 
     # --- 工具调用 (Function Calling) ---
     # 是否启用 Agent 工具调用能力（搜索网页、计算等）
@@ -76,9 +71,7 @@ class Config:
 
     # --- ReAct 推理可视化 ---
     # 是否在 UI 中展示 Agent 的 "思考→行动→观察→回答" 推理过程
-    SHOW_REACT_PROCESS: bool = (
-        os.getenv("SHOW_REACT_PROCESS", "true").lower() == "true"
-    )
+    SHOW_REACT_PROCESS: bool = os.getenv("SHOW_REACT_PROCESS", "true").lower() == "true"
 
     # --- 对话记忆 ---
     # 是否启用多轮对话记忆（通过 session 持久化）
@@ -88,9 +81,7 @@ class Config:
     # 每次请求携带的历史轮次数（0 = 所有历史）
     NUM_HISTORY_RUNS: int = int(os.getenv("NUM_HISTORY_RUNS", "10"))
     # SQLite 数据库路径（用于持久化 session 和对话历史）
-    DB_PATH: str = os.getenv(
-        "DB_PATH", str(PROJECT_ROOT / "data" / "sessions.db")
-    )
+    DB_PATH: str = os.getenv("DB_PATH", str(PROJECT_ROOT / "data" / "sessions.db"))
 
 
 # 单例实例

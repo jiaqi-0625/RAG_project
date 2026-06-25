@@ -1,0 +1,89 @@
+# ============================================================
+# pyproject.toml — 项目元数据 + 工具链配置
+# ============================================================
+
+[project]
+name = "agentic-rag"
+version = "0.1.0"
+description = "100% 本地运行的 Agentic RAG 知识库问答系统"
+requires-python = ">=3.11"
+
+# ============================================================
+# Black — 代码格式化
+# completely uncompromising code formatter
+# ============================================================
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+preview = true
+
+# ============================================================
+# Ruff — 代码检查 (Linter + import排序)
+# An extremely fast Python linter and code formatter, written in Rust
+# ============================================================
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+# 启用的规则集
+select = [
+    "F",      # Pyflakes: 未使用的 import、未定义的变量等
+    "E",      # pycodestyle Error: 严重的格式错误
+    "W",      # pycodestyle Warning: 格式警告
+    "I",      # isort: import 排序
+    "B",      # flake8-bugbear: 常见 bug 模式
+    "C4",     # flake8-comprehensions: 更好的推导式写法
+    "SIM",    # flake8-simplify: 简化代码建议
+    "UP",     # pyupgrade: 升级到新 Python 语法
+]
+
+# 忽略的规则（根据项目情况调整）
+ignore = [
+    "E501",   # 行太长 (交给 black 处理)
+    "B008",   # 不要在函数默认参数中调用函数 (FastAPI/agno 惯用模式)
+]
+
+# 排除的目录
+exclude = [
+    ".git",
+    ".venv",
+    "venv",
+    "__pycache__",
+    "data",
+]
+
+[tool.ruff.lint.isort]
+# import 排序规则
+known-first-party = ["src"]
+force-sort-within-sections = true
+
+# ============================================================
+# Mypy — 静态类型检查
+# Optional static typing for Python
+# ============================================================
+[tool.mypy]
+python_version = "3.11"
+strict = false
+warn_return_any = true
+warn_unused_configs = true
+warn_redundant_casts = true
+check_untyped_defs = true
+no_implicit_optional = true
+
+# 第三方库的类型检查策略
+[[tool.mypy.overrides]]
+module = [
+    "streamlit.*",
+    "ollama.*",
+    "agno.*",
+    "lancedb.*",
+    "sentence_transformers.*",
+    "dotenv.*",
+    "ddgs.*",
+    "pypdf.*",
+    "docx.*",
+    "bs4.*",
+    "sqlalchemy.*",
+]
+ignore_missing_imports = true

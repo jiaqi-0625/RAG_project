@@ -14,22 +14,22 @@ app.py — Streamlit 入口（纯 UI 层）。
 UI 负责：页面布局 + 用户交互 + 流式渲染 + 多轮对话管理。
 """
 
-import logging
+from datetime import UTC, datetime
 import hashlib
 import json
-from datetime import datetime, timezone
+import logging
 from pathlib import Path
 
 import streamlit as st
 
-from src.config import config
-from src.knowledge_base import KnowledgeBaseManager
 from src.agent import AgentFactory
-from src.reranker import create_reranker, RerankerError
-from src.embedder import OllamaConnectionError, EmbeddingModelError
-from src.vector_store import VectorStoreConnectionError
+from src.config import config
+from src.embedder import EmbeddingModelError, OllamaConnectionError
+from src.knowledge_base import KnowledgeBaseManager
 from src.memory import ChatHistory, SessionManager
+from src.reranker import RerankerError, create_reranker
 from src.tools import get_tools
+from src.vector_store import VectorStoreConnectionError
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -104,9 +104,7 @@ for display_name, saved_path in st.session_state.uploaded_files:
             st.warning(f"加载失败 {display_name}: {e}")
 
 # 创建 Agent：根据用户在侧边栏的工具选择动态配置
-selected_tools = [
-    name for name, enabled in st.session_state.tool_selections.items() if enabled
-]
+selected_tools = [name for name, enabled in st.session_state.tool_selections.items() if enabled]
 agent = AgentFactory.create(
     kb_manager,
     tools=get_tools(include=selected_tools) if selected_tools else [],
@@ -118,7 +116,7 @@ agent = AgentFactory.create(
 # ============================================================
 def get_session_id() -> str:
     """获取当前对话的 session_id"""
-    return st.session_state.session_manager.current_session_id
+    return str(st.session_state.session_manager.current_session_id)
 
 
 def start_new_session() -> None:
@@ -223,18 +221,14 @@ with st.sidebar:
             saved_path = config.UPLOAD_DIR / f"{stem}_{file_hash}{suffix}"
 
         str_path = str(saved_path)
-        already_added = any(
-            str_path == sp for _, sp in st.session_state.uploaded_files
-        )
+        already_added = any(str_path == sp for _, sp in st.session_state.uploaded_files)
 
         if not already_added:
             if not saved_path.exists():
                 with open(saved_path, "wb") as f:
                     f.write(uploaded_file.getbuffer())
 
-            st.session_state.uploaded_files.append(
-                (uploaded_file.name, str_path)
-            )
+            st.session_state.uploaded_files.append((uploaded_file.name, str_path))
             with st.spinner(f"📥 正在解析 {uploaded_file.name}……"):
                 try:
                     kb_manager.add_source(str_path)
@@ -364,16 +358,12 @@ with st.sidebar:
         st.session_state.session_list = []
 
     if st.button("🔄 刷新列表", use_container_width=True):
-        st.session_state.session_list = (
-            st.session_state.session_manager.list_sessions(agent)
-        )
+        st.session_state.session_list = st.session_state.session_manager.list_sessions(agent)
         st.rerun()
 
     # 首次加载时自动刷新
     if not st.session_state.session_list:
-        st.session_state.session_list = (
-            st.session_state.session_manager.list_sessions(agent)
-        )
+        st.session_state.session_list = st.session_state.session_manager.list_sessions(agent)
 
     sessions = st.session_state.session_list
 
@@ -385,7 +375,7 @@ with st.sidebar:
             # 格式化时间
             ts = s.updated_at or s.created_at
             if ts:
-                dt = datetime.fromtimestamp(ts, tz=timezone.utc)
+                dt = datetime.fromtimestamp(ts, tz=UTC)
                 time_str = dt.strftime("%m/%d %H:%M")
             else:
                 time_str = "未知时间"
@@ -401,7 +391,7 @@ with st.sidebar:
             col_sw, col_rn, col_dl = st.columns([1, 1, 1])
             with col_sw:
                 if not s.is_current:
-                    if st.button(f"📂 切换", key=f"sw_{i}", use_container_width=True):
+                    if st.button("📂 切换", key=f"sw_{i}", use_container_width=True):
                         sm.load_session(agent, s.session_id, st.session_state.chat_history)
                         st.session_state.session_list = sm.list_sessions(agent)
                         st.rerun()
@@ -421,7 +411,7 @@ with st.sidebar:
                     st.rerun()
 
             with col_dl:
-                if st.button(f"🗑️ 删除", key=f"dl_{i}", use_container_width=True):
+                if st.button("🗑️ 删除", key=f"dl_{i}", use_container_width=True):
                     sm.delete_session(agent, s.session_id)
                     if s.is_current:
                         st.session_state.chat_history.clear()
@@ -473,9 +463,9 @@ if query:
     # --- 调用 Agent 并流式渲染回答（含 ReAct 推理可视化）---
     with st.chat_message("assistant"):
         response = ""
-        react_steps: list = []          # 收集 ReAct 步骤
+        react_steps: list = []  # 收集 ReAct 步骤
         react_placeholder = st.empty()  # ReAct 可视化容器
-        resp_container = st.empty()     # 回答内容容器
+        resp_container = st.empty()  # 回答内容容器
 
         try:
             for chunk in agent.run(
@@ -494,12 +484,14 @@ if query:
                                 if tool.tool_args
                                 else ""
                             )
-                            react_steps.append({
-                                "phase": "act",
-                                "icon": "🔧",
-                                "label": f"调用工具: `{tool.tool_name}`",
-                                "detail": args_str,
-                            })
+                            react_steps.append(
+                                {
+                                    "phase": "act",
+                                    "icon": "🔧",
+                                    "label": f"调用工具: `{tool.tool_name}`",
+                                    "detail": args_str,
+                                }
+                            )
 
                 # ── ReAct: 工具调用完成 → 观察结果 ──
                 elif event == "ToolCallCompleted" and chunk.tools:
@@ -509,31 +501,37 @@ if query:
                             error = tool.tool_call_error
                             phase = "error" if error else "observe"
                             icon = "❌" if error else "👁️"
-                            react_steps.append({
-                                "phase": phase,
-                                "icon": icon,
-                                "label": f"工具返回: `{tool.tool_name}`",
-                                "detail": result_text,
-                            })
+                            react_steps.append(
+                                {
+                                    "phase": phase,
+                                    "icon": icon,
+                                    "label": f"工具返回: `{tool.tool_name}`",
+                                    "detail": result_text,
+                                }
+                            )
 
                 # ── ReAct: 推理步骤 ──
                 elif event in ("ReasoningStep", "ReasoningStarted"):
                     reasoning_content = getattr(chunk, "content", None)
-                    react_steps.append({
-                        "phase": "think",
-                        "icon": "💭",
-                        "label": "推理思考",
-                        "detail": str(reasoning_content or "分析中..."),
-                    })
+                    react_steps.append(
+                        {
+                            "phase": "think",
+                            "icon": "💭",
+                            "label": "推理思考",
+                            "detail": str(reasoning_content or "分析中..."),
+                        }
+                    )
 
                 # ── ReAct: 推理完成 ──
                 elif event == "ReasoningCompleted":
-                    react_steps.append({
-                        "phase": "think",
-                        "icon": "✅",
-                        "label": "推理完成",
-                        "detail": "",
-                    })
+                    react_steps.append(
+                        {
+                            "phase": "think",
+                            "icon": "✅",
+                            "label": "推理完成",
+                            "detail": "",
+                        }
+                    )
 
                 # ── 更新 ReAct 可视化 ──
                 if config.SHOW_REACT_PROCESS and react_steps:

@@ -1,0 +1,42 @@
+# ============================================================
+# Pre-commit Hooks 配置
+#
+# 使用方式:
+#   1. pip install pre-commit
+#   2. pre-commit install          （安装 hooks 到 .git/hooks/）
+#   3. pre-commit run --all-files  （手动对所有文件运行检查）
+#
+# 之后每次 git commit 都会自动运行这些检查。
+# ============================================================
+
+repos:
+  # ── Black: 代码格式化 ──
+  - repo: https://github.com/psf/black
+    rev: 24.8.0
+    hooks:
+      - id: black
+        name: "🎨 Black — 代码格式化"
+        language_version: python3
+
+  # ── Ruff: 代码检查 + import 排序 ──
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.5.7
+    hooks:
+      # Linter（检查代码质量问题）
+      - id: ruff
+        name: "🔍 Ruff — 代码检查"
+        args: ["--fix"]
+      # Formatter（自动格式化，处理 import 排序等）
+      - id: ruff-format
+        name: "📐 Ruff — 格式整理"
+
+  # ── Mypy: 类型检查 ──
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.10.1
+    hooks:
+      - id: mypy
+        name: "📋 Mypy — 类型检查"
+        args: ["--ignore-missing-imports"]
+        additional_dependencies:
+          - types-python-dateutil
+          - types-requests

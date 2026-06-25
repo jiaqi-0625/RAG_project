@@ -16,19 +16,20 @@
     - 已下载模型: embeddinggemma:latest, llama3.2:latest
 """
 
+from collections.abc import Generator
+from contextlib import suppress
 import logging
 import tempfile
-from typing import Generator
 
 import pytest
 
-from src.config import config
-from src.embedder import OllamaEmbedder, OllamaConnectionError, EmbeddingModelError
-from src.vector_store import LanceDBStore
-from src.knowledge_base import KnowledgeBaseManager
-from src.document_loader import DocumentLoader
 from src.agent import AgentFactory
+from src.config import config
+from src.document_loader import DocumentLoader
+from src.embedder import EmbeddingModelError, OllamaConnectionError, OllamaEmbedder
+from src.knowledge_base import KnowledgeBaseManager
 from src.reranker import create_reranker
+from src.vector_store import LanceDBStore
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +53,7 @@ def check_ollama_available() -> bool:
 def check_model_available(model_name: str) -> bool:
     """检查指定模型是否已下载"""
     import ollama
+
     try:
         response = ollama.list()
         models = response.models if hasattr(response, "models") else []
@@ -144,9 +146,7 @@ RAG 相比传统 LLM 的优势在于：可以处理最新信息、减少幻觉�
 @pytest.fixture
 def temp_text_file() -> str:
     """创建临时英文测试文档"""
-    with tempfile.NamedTemporaryFile(
-        mode="w", suffix=".txt", delete=False, encoding="utf-8"
-    ) as f:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False, encoding="utf-8") as f:
         f.write(TEST_DOC_EN)
         return f.name
 
@@ -154,9 +154,7 @@ def temp_text_file() -> str:
 @pytest.fixture
 def temp_text_file_cn() -> str:
     """创建临时中文测试文档"""
-    with tempfile.NamedTemporaryFile(
-        mode="w", suffix=".txt", delete=False, encoding="utf-8"
-    ) as f:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False, encoding="utf-8") as f:
         f.write(TEST_DOC_CN)
         return f.name
 
@@ -166,13 +164,14 @@ def kb_manager() -> Generator[KnowledgeBaseManager, None, None]:
     """创建一个全新的知识库管理器（测试用）"""
     # 使用独立的表名避免与正式数据冲突
     import uuid
+
     test_table = f"test_kb_{uuid.uuid4().hex[:8]}"
 
     store = LanceDBStore(table_name=test_table)
     kb = KnowledgeBaseManager(vector_store=store)
     yield kb
-    # 清理
-    try:
+    # 清理（generator fixture 的 yield 后清理，必须用 try-except）
+    try:  # noqa: SIM105
         kb.clear()
     except Exception:
         pass
@@ -219,14 +218,13 @@ class TestEnvironmentHealth:
     def test_lancedb_initialization(self):
         """测试 LanceDB 能正常初始化"""
         import uuid
+
         test_table = f"test_health_{uuid.uuid4().hex[:8]}"
         store = LanceDBStore(table_name=test_table)
         assert store.db is not None
         # 清理
-        try:
+        with suppress(Exception):
             store.delete()
-        except Exception:
-            pass
 
     @ollama_required
     def test_knowledge_base_initialization(self, kb_manager):
@@ -318,9 +316,7 @@ class TestEndToEndRAG:
     @ollama_required
     @embedding_required
     @llm_required
-    def test_agent_answers_from_loaded_document(
-        self, kb_manager, temp_text_file, agent_with_kb
-    ):
+    def test_agent_answers_from_loaded_document(self, kb_manager, temp_text_file, agent_with_kb):
         """核心测试：加载文档后 Agent 能基于文档内容回答问题"""
         # Step 1: 加载文档
         kb_manager.add_source(temp_text_file)
@@ -334,9 +330,9 @@ class TestEndToEndRAG:
         assert response.content is not None
         answer = str(response.content).lower()
         # 文档中明确提到 "Transformer architecture ... 2017 ... Attention Is All You Need"
-        assert "2017" in answer or "transformer" in answer, (
-            f"期望回答提及 Transformer 或 2017，实际回答: {answer[:300]}"
-        )
+        assert (
+            "2017" in answer or "transformer" in answer
+        ), f"期望回答提及 Transformer 或 2017，实际回答: {answer[:300]}"
 
     @ollama_required
     @embedding_required
@@ -352,16 +348,14 @@ class TestEndToEndRAG:
                 chunks.append(chunk.content)
 
         full_response = "".join(chunks)
-        assert len(full_response) > 20, (
-            f"期望流式回答至少包含 20 个字符，实际: {len(full_response)}"
-        )
+        assert (
+            len(full_response) > 20
+        ), f"期望流式回答至少包含 20 个字符，实际: {len(full_response)}"
 
     @ollama_required
     @embedding_required
     @llm_required
-    def test_agent_respects_language_preference(
-        self, kb_manager, temp_text_file_cn, agent_with_kb
-    ):
+    def test_agent_respects_language_preference(self, kb_manager, temp_text_file_cn, agent_with_kb):
         """测试 Agent 用中文回答中文问题"""
         kb_manager.add_source(temp_text_file_cn)
 
@@ -372,9 +366,7 @@ class TestEndToEndRAG:
         answer = str(response.content)
         # 中文回答应包含中文字符
         has_chinese = any("一" <= c <= "鿿" for c in answer)
-        assert has_chinese, (
-            f"期望中文回答包含中文字符，实际回答: {answer[:300]}"
-        )
+        assert has_chinese, f"期望中文回答包含中文字符，实际回答: {answer[:300]}"
 
     @ollama_required
     @embedding_required
@@ -389,9 +381,7 @@ class TestEndToEndRAG:
         assert response.content is not None
         answer = str(response.content)
         # Agent 应该基于自身训练数据给出合理回答
-        assert len(answer) > 10, (
-            f"期望 Agent 在空知识库时仍能做出回答，实际: {answer[:200]}"
-        )
+        assert len(answer) > 10, f"期望 Agent 在空知识库时仍能做出回答，实际: {answer[:200]}"
 
     @ollama_required
     @embedding_required
@@ -401,7 +391,7 @@ class TestEndToEndRAG:
     ):
         """全流程测试：加载多文档 → 跨文档检索 → 综合回答"""
         # Step 1: 加载两篇不同主题的文档
-        kb_manager.add_source(temp_text_file)     # 英文 AI/ML 概述
+        kb_manager.add_source(temp_text_file)  # 英文 AI/ML 概述
         kb_manager.add_source(temp_text_file_cn)  # 中文 RAG 详解
 
         # Step 2: 提问涉及英文文档的内容
@@ -422,9 +412,7 @@ class TestEndToEndRAG:
     @ollama_required
     @embedding_required
     @llm_required
-    def test_agent_with_conversation_memory(
-        self, kb_manager, temp_text_file
-    ):
+    def test_agent_with_conversation_memory(self, kb_manager, temp_text_file):
         """测试多轮对话记忆：追问能引用上文"""
         agent = AgentFactory.create(
             kb_manager,
@@ -448,9 +436,7 @@ class TestEndToEndRAG:
         # 结合上下文应该能回答 2017
         answer2 = str(r2.content).lower()
         # 注意：small models 可能不总是完美追踪指代，所以用宽松断言
-        assert len(answer2) > 10, (
-            f"期望追问能得到有意义的回答，实际: {answer2[:200]}"
-        )
+        assert len(answer2) > 10, f"期望追问能得到有意义的回答，实际: {answer2[:200]}"
 
     @ollama_required
     @embedding_required
@@ -477,6 +463,4 @@ class TestEndToEndRAG:
         assert response.content is not None
         answer = str(response.content).lower()
         # 应包含文档中关于 Deep Learning 的信息
-        assert len(answer) > 20, (
-            f"期望 Reranker 流水线产出有意义的回答，实际长度: {len(answer)}"
-        )
+        assert len(answer) > 20, f"期望 Reranker 流水线产出有意义的回答，实际长度: {len(answer)}"

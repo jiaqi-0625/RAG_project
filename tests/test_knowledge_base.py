@@ -5,8 +5,8 @@
 """
 
 import pytest
+
 from src.knowledge_base import KnowledgeBaseManager
-from src.vector_store import LanceDBStore
 
 
 class TestKnowledgeBaseManager:

@@ -17,9 +17,8 @@ Reranker 在向量检索之后、LLM 生成之前介入：
   - mixedbread-ai/mxbai-rerank-xsmall-v1  (多语言，~280MB，平衡之选)
 """
 
-import logging
 from abc import ABC, abstractmethod
-from typing import List, Optional
+import logging
 
 from agno.knowledge.document import Document
 from agno.knowledge.reranker.sentence_transformer import SentenceTransformerReranker
@@ -41,7 +40,7 @@ class BaseReranker(ABC):
     """Reranker 基类 — 所有 reranker 实现必须遵循此接口"""
 
     @abstractmethod
-    def rerank(self, query: str, documents: List[Document]) -> List[Document]:
+    def rerank(self, query: str, documents: list[Document]) -> list[Document]:
         """
         对文档列表进行重排序。
 
@@ -80,8 +79,8 @@ class CrossEncoderReranker(BaseReranker):
 
     def __init__(
         self,
-        model_name: Optional[str] = None,
-        top_n: Optional[int] = None,
+        model_name: str | None = None,
+        top_n: int | None = None,
     ):
         """
         Args:
@@ -91,7 +90,9 @@ class CrossEncoderReranker(BaseReranker):
         self._model_name = model_name or config.RERANKER_MODEL
         self._top_n = top_n if top_n is not None else config.RERANKER_TOP_N
 
-        logger.info(f"正在初始化 CrossEncoderReranker: model={self._model_name}, top_n={self._top_n}")
+        logger.info(
+            f"正在初始化 CrossEncoderReranker: model={self._model_name}, top_n={self._top_n}"
+        )
 
         try:
             # 使用 agno 内置的 SentenceTransformerReranker
@@ -105,7 +106,7 @@ class CrossEncoderReranker(BaseReranker):
                 f"请确认模型名称正确且网络可访问（首次加载需下载模型）。"
             ) from e
 
-    def rerank(self, query: str, documents: List[Document]) -> List[Document]:
+    def rerank(self, query: str, documents: list[Document]) -> list[Document]:
         """
         对文档列表进行重排序。
 
@@ -123,11 +124,11 @@ class CrossEncoderReranker(BaseReranker):
         try:
             reranked = self._reranker.rerank(query=query, documents=documents)
             logger.debug(f"重排序完成，保留 {len(reranked)} 个文档")
-            return reranked
+            return reranked  # type: ignore[no-any-return]
         except Exception as e:
             logger.error(f"重排序失败: {e}。回退到原始检索结果。")
             # 降级策略：重排序失败时返回原始结果（保留最好的 top_n 个）
-            return documents[:self._top_n]
+            return documents[: self._top_n]
 
     @property
     def model_name(self) -> str:
@@ -142,10 +143,10 @@ class CrossEncoderReranker(BaseReranker):
 
 
 def create_reranker(
-    model_name: Optional[str] = None,
-    top_n: Optional[int] = None,
-    enabled: Optional[bool] = None,
-) -> Optional[CrossEncoderReranker]:
+    model_name: str | None = None,
+    top_n: int | None = None,
+    enabled: bool | None = None,
+) -> CrossEncoderReranker | None:
     """
     Reranker 工厂函数 — 根据配置创建 reranker 实例。
 
