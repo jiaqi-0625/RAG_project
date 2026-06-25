@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+
+# IDE
+.vscode/
+.idea/
+
+# Environment
+.env
+
+# Data (local LanceDB, uploaded files, sessions)
+data/lancedb/
+data/uploads/
+data/sessions.db
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Jupyter
+.ipynb_checkpoints/
+
+# pytest
+.pytest_cache/

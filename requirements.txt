@@ -1,0 +1,20 @@
+streamlit
+agno>=2.2.10
+lancedb
+ollama
+pypdf
+python-dotenv
+pytest
+
+# --- 多格式文档支持 ---
+python-docx>=1.1.0      # Word 文档解析
+beautifulsoup4>=4.12.0  # HTML 解析
+
+# --- Reranker ---
+sentence-transformers>=3.0.0  # Cross-Encoder 重排序
+
+# --- 对话记忆（SQLite 持久化）---
+sqlalchemy>=2.0.0
+
+# --- 工具调用 (Function Calling) ---
+ddgs>=9.0.0  # 免费网页搜索（DuckDuckGo，无需 API Key）
