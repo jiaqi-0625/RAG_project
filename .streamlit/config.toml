@@ -1,0 +1,13 @@
+# ============================================================
+# Streamlit 主题配置 — DeepQuery 浅色立体风格
+# ============================================================
+[theme]
+primaryColor = "#4F46E5"
+backgroundColor = "#F1F5F9"
+secondaryBackgroundColor = "#FFFFFF"
+textColor = "#1E293B"
+font = "sans serif"
+
+[server]
+# 开发模式下禁用文件监视器（减少不必要的 rerun）
+runOnSave = false
