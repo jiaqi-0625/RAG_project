@@ -99,10 +99,13 @@ class KnowledgeBaseManager:
 
         logger.info(f"正在加载文档: {source}")
         try:
-            # agno Knowledge.add_content 处理 URL 和本地文件
-            # 对于 URL：自动下载并解析
-            # 对于本地文件：自动读取并解析
-            self._knowledge.add_content(url=source)
+            # 区分来源类型，使用正确的 agno API
+            # - URL → add_content(url=...)
+            # - 本地文件 → add_content(path=...)
+            if self._loader._is_url(source):
+                self._knowledge.add_content(url=source)
+            else:
+                self._knowledge.add_content(path=source)
         except Exception as e:
             error_msg = str(e)
             if "connect" in error_msg.lower() or "timeout" in error_msg.lower():
